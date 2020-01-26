@@ -12,7 +12,7 @@ def cipherasym( filein, fileout, rsa_priv_sign, rsa_pub_cipher ):
 	with open(filein, "rb") as f:
 		content = f.read()	
 
-	#RSA sign cle priv
+	# RSA sign cle priv
 	rsa_priv_sign = RSA.import_key(open(rsa_priv_sign).read())
 	sign_priv_key = pss.new(rsa_priv_sign)
 
@@ -30,17 +30,24 @@ def cipherasym( filein, fileout, rsa_priv_sign, rsa_pub_cipher ):
 	cipher = AES.new(kc, AES.MODE_CBC, iv)
 	bmsgcipher = cipher.encrypt(pad(content, AES.block_size))
 
-	# Chiffrement RSA
+	# Chiffrement RSA cle secrete avec cle publique
 	rsa_cipher = cipher_pub_key.encrypt(kc)
 
-	# generation du hash -> sign(IV || WRAP || C)
+	# generation du hash -> sign(IV || RSA_CIPHER || MSG_CIPHER)
 	sha256 = SHA256.new()
 	sha256.update(iv)
 	sha256.update(rsa_cipher)
 	sha256.update(bmsgcipher)
 	
-	# signature du hash
+	# signature du hash avec cle privee
 	signature = sign_priv_key.sign(sha256)
+
+	print("taille RSA cipher :")
+	print(len(rsa_cipher))
+	print("taille bciphermsg :")
+	print(len(bmsgcipher))
+	print("taille signature :")
+	print(len(signature))
 
 	with open(fileout, "wb") as f:
 		f.write(iv)
@@ -48,5 +55,8 @@ def cipherasym( filein, fileout, rsa_priv_sign, rsa_pub_cipher ):
 		f.write(bmsgcipher)
 		f.write(signature)
 		f.close()
+	
+	with open("secretekey","wb") as k:
+		k.write(kc)
 
 test = cipherasym( "./testin", "./testout", "rsa_priv.pem","rsa_pub.pem" )

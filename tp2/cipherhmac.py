@@ -6,14 +6,15 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 #from base64 import b64encode
 import random
+from Crypto.Random import get_random_bytes
 
 def deriv_pwd( mdp, salt, ctr ):
 
 	sha256 = SHA256.new()
 	bmdp = str.encode(mdp)
-	bsalt = str.encode(salt)
+	#bsalt = str.encode(salt)
 	bc = pack("<I",0)
-	hashiter = [bmdp, bsalt, bc]
+	hashiter = [bmdp, salt, bc]
 
 	for h in hashiter:
 		sha256.update(h)
@@ -25,9 +26,9 @@ def deriv_pwd( mdp, salt, ctr ):
 		sha256 = SHA256.new()
 		sha256.update(res)
 		bmdp = str.encode(mdp)
-		bsalt = str.encode(salt)
+		#bsalt = str.encode(salt)
 		bc = pack("<I",i)
-		hashiter = [bmdp, bsalt, bc]
+		hashiter = [bmdp, salt, bc]
 
 		for h in hashiter:
 			sha256.update(h)
@@ -40,12 +41,16 @@ def cipherhmac( mdp, filein, fileout ):
 	with open(filein, "rb") as f:
 		content = f.read()	
 	
+	# creation du salt
+	'''
 	salt = "".join(chr(random.randint(0,255)) for i in range(len(mdp)))
+	#bsalt = bytearray(salt)
+	bsalt = str.encode(salt)
+	'''
+	salt = get_random_bytes(8)
 
 	key = deriv_pwd( mdp, salt, 5000 )
 
-	#bsalt = bytearray(salt)
-	bsalt = str.encode(salt)
 
 	#creation des deux keys
 	# kc
@@ -63,19 +68,32 @@ def cipherhmac( mdp, filein, fileout ):
 	cipher = AES.new(kc, AES.MODE_CBC)	
 	bmsgcipher = cipher.encrypt(pad(content, AES.block_size))
 	iv = cipher.iv
-	
+
 	#Gen hmac
 	hmac = HMAC.new(ki, digestmod=SHA256)
 	hmac.update(iv)
-	hmac.update(bsalt)
+	hmac.update(salt)
 	hmac.update(bmsgcipher)
 	bhmac = hmac.digest()
 
 	with open(fileout, "wb") as f:
 		f.write(iv)
-		f.write(bsalt)
+		f.write(salt)
 		f.write(bmsgcipher)
 		f.write(bhmac)
+	
+	# enregistrer la clés master
+	with open("key", "wb") as k:
+		k.write(key)
+
+	print("taille IV :")
+	print(len(iv))
+	print("taille bsalt :")
+	print(len(salt))
+	print("taille bciphermsg :")
+	print(len(bmsgcipher))
+	print("taille bhamc :")
+	print(len(bhmac))
 
 	#foutput = open(fileout, "wb+")
 	#foutput.write(iv+bsalt+bmsgcipher+bhmac)
