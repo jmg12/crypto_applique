@@ -40,26 +40,36 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, usr_rsa_pub
 	rsa_cipher = cipher_pub_key.encrypt(kc)
 
 	# Chiffrement RSA cle secrete avec cle publique des USERS
-	usr_rsa_cipher = cipher_usr_pub_key(kc)
+	usr_rsa_cipher = cipher_usr_pub_key.encrypt(kc)
 
-	# generation du hash -> sign(IV || RSA_CIPHER || MSG_CIPHER)
+	# generation du hash -> sign( cipher_pub_key )
 	sha256 = SHA256.new()
-	sha256.update(iv)
-	sha256.update(rsa_cipher)
-	sha256.update(bmsgcipher)
+	sha256.update(cipher_pub_key)
+    h = sha256.digest()
+    
 
-	# generation du hash des USERS -> sign(IV || USR_RSA_CIPHER || MSG_CIPHER)
+	# generation du hash des USERS -> sign(cipher_usr_pub_key)
 	usrsha256 = SHA256.new()
-	usrsha256.update(iv)
-	usrsha256.update(usr_rsa_cipher)
-	usrsha256.update(bmsgcipher)
+	usrsha256.update(cipher_usr_pub_key)
+    usrh = usrsha256.digest()
+
+	print(busrsha256)
 
 	# signature du hash avec cle privee
-	signature = sign_priv_key.sign(sha256)
+
+	signsha256 = SHA256.new()
+	signsha256.update(iv)
+	signsha256.update(rsa_cipher)
+	signsha256.update(bmsgcipher)
+    
+	signature = sign_priv_key.sign(signsha256)
 
 	with open(fileout, "wb") as f:
-		f.write(usrsha256)
+		f.write(h)
+		f.write(rsa_cipher)
+		f.write(usrh)
 		f.write(usr_rsa_cipher)
+		f.write(b'%xDE%xAD%xBE%xEF')
 		f.write(iv)
 		f.write(bmsgcipher)
 		f.write(signature)
@@ -89,7 +99,8 @@ def main(argv):
 			buff.append(arg)
 		#print buff
 		#cipherasym( argv[2], argv[3], argv[4], argv[5], buff )
-		cipherasym( argv[2], argv[3], argv[4], argv[5], argv[6] )
+		#cipherasym( argv[2], argv[3], argv[4], argv[5], argv[6] )
+		cipherasym( "./message", "./test", "my_sign_priv.pem", "my_ciph_pub.pem", "usr_ciph_pub.pem")
 
 	elif sys.argv[1] == "-d":
 		print ("This will decrypt")
