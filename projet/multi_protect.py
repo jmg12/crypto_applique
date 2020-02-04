@@ -45,13 +45,13 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, usr_rsa_pub
 	# generation du hash -> sign( cipher_pub_key )
 	sha256 = SHA256.new()
 	sha256.update(cipher_pub_key)
-    h = sha256.digest()
+	myhash = sha256.digest()
     
 
 	# generation du hash des USERS -> sign(cipher_usr_pub_key)
 	usrsha256 = SHA256.new()
 	usrsha256.update(cipher_usr_pub_key)
-    usrh = usrsha256.digest()
+	usrh = usrsha256.digest()
 
 	print(busrsha256)
 
@@ -65,7 +65,7 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, usr_rsa_pub
 	signature = sign_priv_key.sign(signsha256)
 
 	with open(fileout, "wb") as f:
-		f.write(h)
+		f.write(hmyhash)
 		f.write(rsa_cipher)
 		f.write(usrh)
 		f.write(usr_rsa_cipher)
@@ -88,15 +88,16 @@ def usage():
 
 def main(argv):
 	# check arguments
-	if len(sys.argv) < 6:
+	#if len(sys.argv) < 6:
+	if len(sys.argv) < 2:
 		usage()
 
 #	try:
 	if sys.argv[1] == "-e":
 		print ("This will encrypt")
 		buff = []
-		for arg in argv[6:]:
-			buff.append(arg)
+		#for arg in argv[6:]:
+			#buff.append(arg)
 		#print buff
 		#cipherasym( argv[2], argv[3], argv[4], argv[5], buff )
 		#cipherasym( argv[2], argv[3], argv[4], argv[5], argv[6] )
