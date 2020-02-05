@@ -14,7 +14,13 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, usr_rsa_pub
 	with open(filein, "rb") as f:
 		data = f.read()
 
-	# My RSA sign cle priv
+	# DEADBEEF in bytes
+	c = struct.pack('>I', 0xDEADBEEF)
+	# TODOO
+	res = struct.unpack('>I',c)
+	hex(res)
+
+	 My RSA sign cle priv
 	rsa_priv_sign = RSA.import_key(open(my_rsa_priv_sign).read())
 	sign_priv_key = pss.new(rsa_priv_sign)
 
@@ -65,11 +71,11 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, usr_rsa_pub
 	signature = sign_priv_key.sign(signsha256)
 
 	with open(fileout, "wb") as f:
-		f.write(hmyhash)
+		f.write(myhash)
 		f.write(rsa_cipher)
 		f.write(usrh)
 		f.write(usr_rsa_cipher)
-		f.write(b'%xDE%xAD%xBE%xEF')
+		f.write(b'0xDE0xAD0xBE0xEF')
 		f.write(iv)
 		f.write(bmsgcipher)
 		f.write(signature)
