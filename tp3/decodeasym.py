@@ -7,12 +7,10 @@ from Crypto.Signature import pss
 from Crypto.PublicKey import RSA
 import binascii
 
-def decode( filename, fkey, rsa_pub_sign, rsa_priv_cipher ):
+#def decode( filename, fkey, rsa_pub_sign, rsa_priv_cipher ):
+def decode( filename, rsa_pub_sign, rsa_priv_cipher ):
 	with open(filename, "rb") as f:
 		content = f.read()
-
-	with open(fkey, "rb") as k:
-		key = k.read()
 
 	# RSA sign cle pub
 	rsa_pub_sign = RSA.import_key(open(rsa_pub_sign).read())
@@ -33,6 +31,9 @@ def decode( filename, fkey, rsa_pub_sign, rsa_priv_cipher ):
 	print ("msg cipher = ", binascii.hexlify(bmsgcipher), "\n")
 	print ("signature = ", binascii.hexlify(signature), "\n")
 
+	# Recuperation de la cle master
+	kc = cipher_priv_key.decrypt(rsa_cipher)
+
 	# validation du hash
 	sha256 = SHA256.new()
 	sha256.update(iv)
@@ -49,7 +50,7 @@ def decode( filename, fkey, rsa_pub_sign, rsa_priv_cipher ):
 	# dechiffrement du message
 	try:
 		print("Déchiffrement en cours ...")
-		cipher = AES.new(key, AES.MODE_CBC, iv)
+		cipher = AES.new(kc, AES.MODE_CBC, iv)
 		decodemsg = unpad(cipher.decrypt(bmsgcipher),AES.block_size)
 		print("Le message secret est : ",decodemsg.decode("utf-8"))
 
@@ -57,4 +58,5 @@ def decode( filename, fkey, rsa_pub_sign, rsa_priv_cipher ):
 		print("Le déchiffrement n'a pas pu aboutir :/")
 
 
-decode("./testout", "./secretekey", "rsa_pub.pem", "rsa_priv.pem")
+#decode("./testout", "./secretekey", "rsa_pub.pem", "rsa_priv.pem")
+decode("./testout", "rsa_pub.pem", "rsa_priv.pem")

@@ -6,12 +6,16 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
 
-def decode(filename, fkey):
+#def decode(filename, fkey):
+def decode(filename):
 	with open(filename, "rb") as f:
 		content = f.read()
 	
-	with open(fkey, "rb") as k:
-		key = k.read()
+	#with open(fkey, "rb") as k:
+	#	key = k.read()
+
+	# Masyter Key
+	key = b"chaine de caracteres de 32 bits!"
 	
 	# Gen Kc pour AES et Ki pour hmac
 	kc = SHA256.new(key + pack("<B", 0)).digest()
@@ -50,4 +54,5 @@ def decode(filename, fkey):
 		print("Le déchiffrement n'a pas pu aboutir :/")
 	
 
-decode("./testout", "./key")
+decode("./testout")
+#decode("./testout", "./key")

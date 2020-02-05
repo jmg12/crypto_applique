@@ -21,7 +21,7 @@ def cipherasym( filein, fileout, rsa_priv_sign, rsa_pub_cipher ):
 	cipher_pub_key = PKCS1_OAEP.new(rsa_pub_key)
 
 	# kc
-	kc = get_random_bytes(32)
+	kc = b"testTOTOtatatiti" 
 
 	# iv
 	iv = get_random_bytes(16)
@@ -55,8 +55,5 @@ def cipherasym( filein, fileout, rsa_priv_sign, rsa_pub_cipher ):
 		f.write(bmsgcipher)
 		f.write(signature)
 		f.close()
-	
-	with open("secretekey","wb") as k:
-		k.write(kc)
 
 test = cipherasym( "./testin", "./testout", "rsa_priv.pem","rsa_pub.pem" )

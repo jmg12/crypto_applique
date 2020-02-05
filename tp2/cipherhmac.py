@@ -49,8 +49,8 @@ def cipherhmac( mdp, filein, fileout ):
 	'''
 	salt = get_random_bytes(8)
 
-	key = deriv_pwd( mdp, salt, 5000 )
-
+	#key = deriv_pwd( mdp, salt, 5000 )
+	key = b"chaine de caracteres de 32 bits!"
 
 	#creation des deux keys
 	# kc
@@ -82,10 +82,15 @@ def cipherhmac( mdp, filein, fileout ):
 		f.write(bmsgcipher)
 		f.write(bhmac)
 	
+	"""
 	# enregistrer la clés master
 	with open("key", "wb") as k:
 		k.write(key)
+	"""
 
+	print("taille KEY :")
+	print(len(key))
+	print(key)
 	print("taille IV :")
 	print(len(iv))
 	print("taille bsalt :")
