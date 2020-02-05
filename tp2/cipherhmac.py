@@ -8,13 +8,11 @@ from Crypto.Util.Padding import pad
 import random
 from Crypto.Random import get_random_bytes
 
-def deriv_pwd( mdp, salt, ctr ):
+def deriv_key( key, salt, ctr ):
 
 	sha256 = SHA256.new()
-	bmdp = str.encode(mdp)
-	#bsalt = str.encode(salt)
 	bc = pack("<I",0)
-	hashiter = [bmdp, salt, bc]
+	hashiter = [key, salt, bc]
 
 	for h in hashiter:
 		sha256.update(h)
@@ -25,10 +23,8 @@ def deriv_pwd( mdp, salt, ctr ):
 	for i in range(1,ctr):
 		sha256 = SHA256.new()
 		sha256.update(res)
-		bmdp = str.encode(mdp)
-		#bsalt = str.encode(salt)
 		bc = pack("<I",i)
-		hashiter = [bmdp, salt, bc]
+		hashiter = [key, salt, bc]
 
 		for h in hashiter:
 			sha256.update(h)
@@ -36,31 +32,28 @@ def deriv_pwd( mdp, salt, ctr ):
 		res = sha256.digest()
 	return res
 
-def cipherhmac( mdp, filein, fileout ):
+def cipherhmac( filein, fileout ):
 	content = ""
 	with open(filein, "rb") as f:
 		content = f.read()	
 	
-	# creation du salt
-	'''
-	salt = "".join(chr(random.randint(0,255)) for i in range(len(mdp)))
-	#bsalt = bytearray(salt)
-	bsalt = str.encode(salt)
-	'''
-	salt = get_random_bytes(8)
-
-	#key = deriv_pwd( mdp, salt, 5000 )
+	# La cle et le sel connus
+	#salt = get_random_bytes(8)
+	salt = b"Our salt"
 	key = b"chaine de caracteres de 32 bits!"
+
+	# Gen Master Key
+	Masterkey = deriv_key( key, salt, 5000 )
 
 	#creation des deux keys
 	# kc
 	sha256 = SHA256.new()
-	sha256.update(key)
+	sha256.update(Masterkey)
 	sha256.update(pack("B",0))
 	kc = sha256.digest()
 	# ki
 	sha256 = SHA256.new()
-	sha256.update(key)
+	sha256.update(Masterkey)
 	sha256.update(pack("B",1))
 	ki = sha256.digest()
 	
@@ -81,12 +74,6 @@ def cipherhmac( mdp, filein, fileout ):
 		f.write(salt)
 		f.write(bmsgcipher)
 		f.write(bhmac)
-	
-	"""
-	# enregistrer la clés master
-	with open("key", "wb") as k:
-		k.write(key)
-	"""
 
 	print("taille KEY :")
 	print(len(key))
@@ -100,9 +87,4 @@ def cipherhmac( mdp, filein, fileout ):
 	print("taille bhamc :")
 	print(len(bhmac))
 
-	#foutput = open(fileout, "wb+")
-	#foutput.write(iv+bsalt+bmsgcipher+bhmac)
-	#foutput.write(bhmac)
-	#foutput.close()
-
-test = cipherhmac("toto", "./testin", "./testout")
+test = cipherhmac("./testin", "./testout")

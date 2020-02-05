@@ -23,6 +23,14 @@ def deriv_pwd( mdp, salt, ctr ):
 		sha256 = SHA256.new()
 		# gen salt with Crypto.Random
 		#salt = "".join(random.choice(salt) for i in range(lenmdp))
+
+		# creation du salt
+		"""
+		salt = "".join(chr(random.randint(0,255)) for i in range(len(key)))
+		#bsalt = bytearray(salt)
+		bsalt = str.encode(salt)
+		"""
+
 		sha256.update(res)
 		
 		bmdp = str.encode(mdp)
