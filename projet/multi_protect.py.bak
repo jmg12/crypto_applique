@@ -12,6 +12,7 @@ import struct
 
 
 def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, *buffers):
+#def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, usr_rsa_pub_cipher):
 	data = ""
 	with open(filein, "rb") as f:
 		data = f.read()
@@ -20,6 +21,7 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, *buffers):
 	arguments = ()
 	for buf in buffers:
 		arguments = buf
+		#arguments.append(buf) # si list
 	
 	# Recuperation des cle RSA pub des ustilisateurs 
 	usrsRSApub = []
@@ -34,10 +36,11 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, *buffers):
 	rsa_pub_key = RSA.importKey(open(my_rsa_pub_cipher).read())
 	cipher_pub_key = PKCS1_OAEP.new(rsa_pub_key)
 
-	# USERS RSA chiffre cle pub
+	# USER 1 RSA chiffre cle pub
 	cipher_usrs_pub_key = []
 	for i in range(0,len(usrsRSApub)):
 		rsa_usr_pub_key = RSA.importKey(open(usrsRSApub[i]).read())
+		#cipher_usr_pub_key = PKCS1_OAEP.new(rsa_usr_pub_key)
 		cipher_usrs_pub_key.append(PKCS1_OAEP.new(rsa_usr_pub_key))
 
 	# kc
@@ -47,7 +50,6 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, *buffers):
 	iv = get_random_bytes(16)
 
 	# Chiffrement AES-CBC
-	print("Chiffrement en cours ...")
 	cipher = AES.new(kc, AES.MODE_CBC, iv)
 	bmsgcipher = cipher.encrypt(pad(data, AES.block_size))
 
@@ -57,6 +59,7 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, *buffers):
 	# Chiffrement RSA cle secrete avec cle publique des USERS
 	usrs_rsa_cipher = []
 	for i in range(0,len(cipher_usrs_pub_key)):
+		#usr_rsa_cipher = cipher_usr_pub_key.encrypt(kc)
 		usrs_rsa_cipher.append(cipher_usrs_pub_key[i].encrypt(kc))
 
 	# Convertion de la cle pub en bytes
@@ -72,6 +75,7 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, *buffers):
 	usrsHash = []
 	for i in range(0,len(usrsRSApub)):
 		# Convertion de la cle pub en bytes
+		#read_usr_rsa_pub_cipher = open(usr_rsa_pub_cipher).read()
 		read_usr_rsa_pub_cipher = open(usrsRSApub[i]).read()
 		busr_rsa_pub_cipher = str.encode(read_usr_rsa_pub_cipher)
 
@@ -79,15 +83,30 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, *buffers):
 		usrsha256 = SHA256.new()
 		usrsha256.update(busr_rsa_pub_cipher)
 		usrsHash.append(usrsha256.digest())
+		#usrh = usrsha256.digest()
 
 	# signature du hash avec cle privee
 	signsha256 = SHA256.new()
 	signsha256.update(iv)
+	#signsha256.update(rsa_cipher)
 	signsha256.update(bmsgcipher)
+    
 	signature = sign_priv_key.sign(signsha256)
+
+	print("Hash sender: ", len(myhash))
+	print("RSA cipher sender: ", len(rsa_cipher))
+	for i in range(0,len(usrsRSApub)):
+		print("hash dest: ", len(usrsHash[i]))
+		print("RSA cipher dest: ", len(usrs_rsa_cipher[i]))
+	print("IV: ", len(iv))
+	print("bmsgcipher: ", len(bmsgcipher))
+	print("Signature: ", len(signature))
 
 	# DEADBEEF in bytes
 	deadbeef = struct.pack('>I', 0xDEADBEEF)
+	#res = struct.unpack('>I',deadbeef)
+	#hex(res)
+	#print(binascii.hexlify(deadbeef), " : ", len(deadbeef) )
 	
 	with open(fileout, "wb") as f:
 		f.write(myhash)
@@ -100,11 +119,77 @@ def cipherasym(filein, fileout, my_rsa_priv_sign, my_rsa_pub_cipher, *buffers):
 		f.write(bmsgcipher)
 		f.write(signature)
 		f.close()
-	print("Le message a bien été chiffré avec succes :)") 
 
-def decode(filein, fileout,usr_rsa_priv_cipher, usr_rsa_pub_cipher, sender_rsa_pub_sign ):
-	with open(filein, "rb") as f:
+def decode(filename, usr_rsa_priv_cipher, usr_rsa_pub_cipher, sender_rsa_pub_sign ):
+#def decode(filename, *buffers ):
+	with open(filename, "rb") as f:
 		data = f.read()
+
+	"""
+	# Recuperation des arguments
+	arguments = ()
+	for buf in buffers:
+		arguments = buf
+		#arguments.append(buf)
+
+	#print(arguments[-1])
+	#print (buffers[0])
+	#a = buffers.split()
+
+	# retrieve usr cipher pub
+	#bufarray = bytearray(len(buffers))
+	#pair
+	#for i in range(0,len(bufarray)):
+	usrsRSApub = []
+	usrsRSApriv = []
+	for i in range(0,len(arguments)):
+		if i%2 == 1:
+			print("test pair")
+			if arguments[i] != arguments[-1]:
+				usrsRSApub.append(arguments[i])
+			# check position grace au hash256
+			#if usrh == tuplehash:
+			#	print("do something")
+		else:
+			print("test impair")
+			if arguments[i] != arguments[-1]:
+				usrsRSApriv.append(arguments[i])
+	usrsHash = []
+	for i in range(0,len(usrsRSApub)):
+		# Convertion de la cle pub en bytes
+		read_usr_rsa_pub_cipher = open(usrsRSApub[i]).read()
+		busr_rsa_pub_cipher = str.encode(read_usr_rsa_pub_cipher)
+
+		# Recuperation RSA cipher
+		usrsha256 = SHA256.new()
+		usrsha256.update(busr_rsa_pub_cipher)
+		usrsHash.append(usrsha256.digest())
+
+	#print("User Hash ", binascii.hexlify(usrsHash[0]), "\n" )
+	if usrsHash[0] in data:
+		endsha = data.find(usrsHash[0]) + 32
+		userHash = data[data.find(usrsHash[0]):endsha]
+		print("test ok ")
+	"""
+
+	"""
+	bufarray = bytearray(buffers)
+	#pair
+	if i%2 == 0:
+		for b in buffers:
+			userHash = data[0:32]
+
+	#impair
+	else:
+		for b in buffers:
+			userRSAcipher = data[32:288]
+		
+	for b in buffers:
+		userHash = data[0:32]
+		userRSAcipher = data[32:288]
+	"""
+
+	# Parsing SHA256(kpub-1) || RSA_kpub-1(Kc) || ... || SHA256(kpub-N) || RSA_kpub-N(Kc) || 0xDEADBEEF || IV || C || Sign
 
 	# Convertion de la cle pub en bytes
 	read_usr_rsa_pub_cipher = open(usr_rsa_pub_cipher).read()
@@ -120,17 +205,20 @@ def decode(filein, fileout,usr_rsa_priv_cipher, usr_rsa_pub_cipher, sender_rsa_p
 		startsha = data.find(usrh)
 		endsha = data.find(usrh) + 32
 		userHash = data[startsha:endsha]
-	
+		
 	# Recherche de la position de la cle chiffre du destinataire
 	if userHash in data:
 		startcipher = data.find(userHash) + 32
 		endcipher = startcipher + 256
 		userRSAcipher = data[startcipher:endcipher]
+		#print("Sender RSA cipher: ", binascii.hexlify(userRSAcipher), "\n" )
 
 	# Recherche de la position DEADBEEF
 	deadbeef = struct.pack('>I', 0xDEADBEEF)
 	startdeadbeef = data.find(deadbeef)
 	enddeadbeef = data.find(deadbeef) + 4
+	print(startdeadbeef)
+	print(enddeadbeef)
 	
 	# Recupere IV || C || Sign
 	startiv = enddeadbeef
@@ -145,6 +233,26 @@ def decode(filein, fileout,usr_rsa_priv_cipher, usr_rsa_pub_cipher, sender_rsa_p
 	endsign = startsign + 256
 	signature = data[startsign:endsign]
 
+	'''
+	#senderHash = data[0:32]
+	#senderRSAcipher = data[32:288]
+	#userHash = data[288:320]
+	#userRSAcipher = data[320:576]
+	#deadbeef = data[576:580]
+	#iv = data[580:596]
+	#bmsgcipher = data[596:612]
+	#signature = data[612:868]
+	
+	#print("Sender hash: ", binascii.hexlify(senderHash), "\n" )
+	#print("Sender RSA cipher: ", binascii.hexlify(senderRSAcipher), "\n" )
+	#print("User Hash ", binascii.hexlify(userHash), "\n" )
+	#print("Sender RSA cipher: ", binascii.hexlify(userRSAcipher), "\n" )
+	#print("DEADBEEF: ", binascii.hexlify(deadbeef), "\n" )
+	#print("IV: ", binascii.hexlify(iv), "\n" )
+	#print("bmshcipher: ", binascii.hexlify(bmsgcipher), "\n" )
+	#print("signature: ", binascii.hexlify(signature), "\n" )
+	'''
+
 	# RSA sign cle pub de l'expediteur
 	rsa_sender_pub_sign = RSA.import_key(open(sender_rsa_pub_sign).read())
 	sign_sender_pub_key = pss.new(rsa_sender_pub_sign)
@@ -157,8 +265,10 @@ def decode(filein, fileout,usr_rsa_priv_cipher, usr_rsa_pub_cipher, sender_rsa_p
 	kc = cipher_usr_priv_key.decrypt(userRSAcipher)
 
 	# validation du hash
+	senderRSAcipher = data[32:288]
 	sha256 = SHA256.new()
 	sha256.update(iv)
+	#sha256.update(senderRSAcipher)
 	sha256.update(bmsgcipher)
 
 	try:
@@ -173,9 +283,6 @@ def decode(filein, fileout,usr_rsa_priv_cipher, usr_rsa_pub_cipher, sender_rsa_p
 		cipher = AES.new(kc, AES.MODE_CBC, iv)
 		decodemsg = unpad(cipher.decrypt(bmsgcipher), AES.block_size)
 		print("Le message secret est : ", decodemsg.decode("utf-8"))
-		with open(fileout, "w") as f:
-			f.write("Le message secret est : " + decodemsg.decode("utf-8") )
-			f.close()
 
 	except ValueError:
 		print("Le déchiffrement n'a pas pu aboutir :/")
@@ -193,19 +300,37 @@ def usage():
 
 def main(argv):
 	# check arguments
-	if len(sys.argv) < 6:
+	#if len(sys.argv) < 6:
+	if len(sys.argv) < 2:
 		usage()
 
+#	try:
 	if sys.argv[1] == "-e":
-		print ("\nThis will encrypt\n")
+		print ("This will encrypt")
+		buff = []
+		#for arg in argv[6:]:
+			#buff.append(arg)
+		#print buff
 		cipherasym( argv[2], argv[3], argv[4], argv[5], argv[6:] )
+		#cipherasym( argv[2], argv[3], argv[4], argv[5], argv[6] )
+		#cipherasym( "./message", "./test", "my_sign_priv.pem", "my_ciph_pub.pem", "usr_ciph_pub.pem")
 
 	elif sys.argv[1] == "-d":
-		print ("\nThis will decrypt\n")
-		decode( argv[2], argv[3], argv[4], argv[5], argv[6] )
+		print ("This will decrypt")
+		#decode( argv[2], argv[3:] )
+		decode( argv[2], argv[3], argv[4], argv[5] )
+		#decode( "./test", "usr_ciph_priv.pem", "usr_ciph_pub.pem", "my_sign_pub.pem")
 
 	else:
 		usage()
+
+#	except IndexError:
+#		print """usage: 
+#		$ python multi_protect.py -e <input_file> <output_file> <my_sign_priv.pem> <my_ciph_pub.pem> [user1_ciph_pub.pem ... [userN_ciph_pub.pem]]
+
+#		$ python multi_protect.py -d <input_file> <output_file> <my_priv_ciph.pem> <my_pub_ciph.pem> <sender_sign_pub.pem>"""
+#	except ValueError:
+#		print "Sorry something went wrong"
 
 if __name__ == "__main__":
 	main(sys.argv)
