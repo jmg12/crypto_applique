@@ -1,3 +1,0 @@
-cmd to cipher:
-python3 multi_protect.py -e message test my_ciph_priv.pem my_ciph_pub.pem usr_ciph_pub.pem 
-
