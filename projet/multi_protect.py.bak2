@@ -138,14 +138,11 @@ def decode(filein, fileout,usr_rsa_priv_cipher, usr_rsa_pub_cipher, sender_rsa_p
 	iv = data[startiv:endiv]
 
 	startc = endiv
-	#endc = startc + 16
-	endc = (data.find(data) + len(data)) - 256
+	endc = startc + 16
 	bmsgcipher = data[startc:endc]
 
-	#startsign = endc
-	startsign = (data.find(data) + len(data)) - 256
-	#endsign = startsign + 256
-	endsign = data.find(data) + len(data)
+	startsign = endc
+	endsign = startsign + 256
 	signature = data[startsign:endsign]
 
 	# RSA sign cle pub de l'expediteur
